@@ -1,0 +1,254 @@
+Rem ********************************************************************
+Rem **    NIALL  Non-Intelligent AMOS Language Learner Version 1.0    **
+Rem **   ==========================================================   **
+Rem **                Written By Matthew Peck in 1990                 **
+Rem ********************************************************************
+Set Buffer 120
+MNW=3000
+Randomize Timer
+Hide On : Close Editor
+Close Workbench
+Dim WORD$(MNW,1),W$(255),CO(1)
+Global COM,T$,WORD$(),NUM,W$(),W,SPEAK,HARD,CO(),MNW
+WORD$(0,0)=" " : WORD$(MNW,0)="."
+SETUP
+Do
+   USER_INPUT
+   If COM=1 Then Goto SKIPIT
+   NIALL_REPLIES
+   SKIPIT:
+Loop
+Rem --------------------------------------------------------------------
+Procedure SEE_INSTRUCTIONS
+   Screen Hide 1 : Screen Hide 0
+   For F=1 To 2 : Unpack 2 To 2 : Gr Writing 0
+      For G=1 To 25 : Read C,A$ : Ink 0 : Text 17,33+G*8,A$
+         Ink C : Text 16,32+G*8,A$
+   Next G : Wait Key : Fade 2 : Wait 30 : Next F
+   Screen Close 2
+   Screen Show 1 : Screen Show 0
+   Data 6,"                               COMMAND WORDS"
+   Data 1," "
+   Data 1," When you are given the prompt USER: you will normally type in  a  sentence,"
+   Data 1,"but you can also type in a command word.    All command words  are  prefixed"
+   Data 1,"by a '#'.  This version (1.0) can support the following commands."
+   Data 1," "
+   Data 7,"#LIST        Displays Nialls current dictionary on the screen."
+   Data 1," "
+   Data 7,"#LLIST       Outputs the dictionary to a printer."
+   Data 1," "
+   Data 7,"#LPRINT      Toggles direct output to printer."
+   Data 1," "
+   Data 7,"#SPEAK       Toggles speech."
+   Data 1," "
+   Data 7,"#SAVE        Saves the current dictionary to disc under any name."
+   Data 1," "
+   Data 7,"#LOAD        Loads a previously saved dictionary from disc."
+   Data 1," "
+   Data 7,"#CORRECT     Corrects a mispelt word in the dictionary."
+   Data 1," "
+   Data 7,"#FRESH       Clears the current dictionary."
+   Data 1," "
+   Data 7,"#QUIT        Leaves the program."
+   Data 1," "
+   Data 5,"                                PRESS A KEY"
+   Data 5,"                                  CREDITS"
+   Data 1," "
+   Data 4,"         Written by Matthew Peck in AMOS Version 1.1 in August 1990"
+   Data 1,"  The original idea for NIALL was adapted from a program called DANI, which"
+   Data 1,"was written for the MSX machines and published in a magazine,MSX Computing."
+   Data 1,"NIALL is a complete re-write but I would like to give credit to the  author"
+   Data 1,"of DANI for the inspiration.  However, I no longer have the magazine and do"
+   Data 1,"not know the author's name. If you wrote DANI then contact me so that I can"
+   Data 1,"place your name in the credit list."
+   Data 1," "
+   Data 1,"  Many thanks go to the following people for their help, suggestions etc."
+   Data 6,"Adam Wright................................For waiting for me to code this."
+   Data 6,"Pat Fox and Julian Brown.....For playtesting my BBC basic version to death."
+   Data 6,"Kevin Tye...................................For being a generally nice guy."
+   Data 6,"Gary Keogh...............For being a great room-mate and friend at college."
+   Data 6,"Francios Lionet........................For AMOS, what else, and finally to "
+   Data 6,"Sarah Gould...........For being such a caring and understanding girlfriend."
+   Data 1," "
+   Data 1,"My address is:"
+   Data 4,"      23 Welbeck Avenue, Bedgrove, Aylesbury, Bucks, ENGLAND, HP21 9BH."
+   Data 1," Contact me with/for ideas, programs, NIALL dictionaries and NIALL updates."
+   Data 1," "
+   Data 5,"                                PRESS A KEY"
+   Data 1," "
+   Data 5,"                        AMOS (c) 1990 Mandarin/Jawx"
+End Proc
+Procedure USER_INPUT
+   COM=0 : For F=1 To 3 : Print : Next F : For F=1 To 3 : Cup : Next F
+   Pen CO(1) : Print "USER:"; : Pen 1 : Line Input " ";T$
+   Cup : Pen CO(1) : Print "USER: "; : Pen 1 : Print T$
+   If HARD=1 Then Lprint " USER:";T$
+   If T$="" Then Pop Proc
+   T$=Lower$(T$)
+   Rem --- Is it a command string ---
+   If Left$(T$,1)="#" Then COMMANDS : COM=1 : Pop Proc
+   Rem --- Cuts out the rubbish ---
+   R$="" : For F=1 To Len(T$)
+      If Mid$(T$,F,1)="," Then Mid$(T$,F,1)="."
+      If Instr("!$%^&*()_+|}{@?></#\="+Chr$(34),Mid$(T$,F,1))=0 Then R$=R$+Mid$(T$,F,1)
+   Next F : T$=R$
+   Rem --- Seperates into words ---
+   If Right$(T$,1)="." Then Right$(T$,1)=" "
+   Q$=T$
+   FULLSTOP:
+   If Instr(Q$,".")<>0 Then FS=1 : T$=Left$(Q$,Instr(Q$,".")-1) : Q$=Right$(Q$,Len(Q$)-Instr(Q$,"."))
+   W=1 : W$(W)="" : For F=1 To Len(T$)
+      If Mid$(T$,F,1)=" " Then If Mid$(T$,F+1,1)<>" " Then W=W+1 : W$(W)="" : Goto SKIP
+      W$(W)=W$(W)+Mid$(T$,F,1)
+   SKIP: Next F
+   If NUM<>MNW-1
+      ANALYSE_SENTENCE
+   End If
+   If FS=1 Then FS=0 : T$=Q$ : Goto FULLSTOP
+End Proc
+Procedure ANALYSE_SENTENCE
+   Rem --- Loop for the number of words +1 ---
+   OLD=0
+   For H=1 To W+1
+      If H=W+1 Then F=MNW : Goto FOUNDIT
+      For F=1 To NUM : If W$(H)=WORD$(F,0) Then Goto FOUNDIT
+      Next F
+      Rem --- The word is a new one ---
+      NUM=NUM+1 : WORD$(NUM,0)=W$(H) : F=NUM
+      FOUNDIT:
+      If WORD$(OLD,1)="" Then WORD$(OLD,1)="1|"+Str$(F)+"(1)" : Goto ALLDONE
+      C$=WORD$(OLD,1) : C$=Str$(Val(C$)+1)+Right$(C$,Len(C$)-Instr(C$,"|")+1)
+      For G=Instr(C$,"|")+1 To Len(C$)
+         If Val(Right$(C$,Len(C$)-G))=F Then Goto HERE
+         G=Instr(C$,")",G)
+      Next G
+      C$=C$+Str$(F)+"(1)" : WORD$(OLD,1)=C$ : Goto ALLDONE
+      HERE:
+      G=Instr(C$,"(",G) : I=Instr(C$,")",G)-1
+      C$=Left$(C$,G)+Str$(Val(Right$(C$,Len(C$)-G))+1)+Right$(C$,Len(C$)-I)
+      WORD$(OLD,1)=C$
+      ALLDONE:
+      OLD=F
+   Next H
+End Proc
+Procedure NIALL_REPLIES
+   If NUM=0 Then Pen CO(1) : Print "I cannot speak yet!" : Pen 1 : Pop Proc
+   REP$="" : C=0
+   RLOOP:
+   C$=WORD$(C,1) : R=Rnd(Val(C$)) : If R=0 Then Goto RLOOP
+   For G=Instr(C$,"(") To Len(C$)
+      R=R-Val(Right$(C$,Len(C$)-G)) : If R<=0 Then Goto THISWORD
+      G=Instr(C$,"(",G+1)-1
+   Next G
+   End
+   THISWORD:
+   For F=G To 1 Step -1
+      F$=Mid$(C$,F,1) : If(F$=")") or(F$="|") Then Goto WORD
+   Next F
+   WORD:
+   D=Val(Right$(C$,Len(C$)-F))
+   REP$=REP$+WORD$(C,0)+" "
+   C=D : If C<>MNW Then Goto RLOOP
+   Do
+      If Left$(REP$,1)<>" " Then Exit
+      REP$=Right$(REP$,Len(REP$)-1)
+   Loop
+   If REP$="" Then Pop Proc
+   Left$(REP$,1)=Chr$(Asc(Left$(REP$,1))-32)
+   Right$(REP$,1)="."
+   Pen CO(1) : Print "NIALL:"; : Pen 1 : Print REP$
+   If SPEAK=1 Then Say REP$,0
+   If HARD=1 Then Lprint "NIALL:";REP$
+End Proc
+Procedure SETUP
+   If Fast Free<>0
+      Unpack 1 To 0 : Screen Display 0,128,40,320,28
+   End If
+   If Fast Free<>0
+      Screen Open 1,640,230,4,Hires : CO(0)=2 : CO(1)=3
+   Else
+      Screen Open 1,320,230,2,Lowres : CO(0)=1 : CO(1)=1
+   End If
+   Screen Display 1,128,70,, : Flash Off : Screen 1 : Palette $0,$FFF,$F00,$48
+   Pen CO(0) : Paper 0 : Cls
+   Centre "Welcome to NIALL" : Print
+   Centre "Non Intelligent AMOS Language Learner" : Print
+   Centre "Written in AMOS Basic Version 1.1" : Print
+   Centre "by Matthew Peck in 1990" : Print : Print
+   Centre "This program is fully Public Domain" : Print : Print
+   If Fast Free<>0
+      Centre "Would you like further instructions (Y/N)" : A$=Input$(1) : Print
+      A$=Upper$(A$)
+      If A$="Y"
+         SEE_INSTRUCTIONS
+      End If
+      Centre ".......... Get Typing ..........."
+   End If
+   Print
+End Proc
+Procedure COMMANDS
+   If T$="#list"
+      For F=0 To NUM Step 20
+         For G=0 To 19 : If F+G<=NUM
+               Print F+G,WORD$(F+G,0),WORD$(F+G,1)
+            End If
+         Next G : Print : Pen CO(0) : Centre "PRESS A KEY" : Pen 1 : Print : Wait Key
+      Next F : Pop Proc
+   End If
+   If T$="#llist"
+      For F=0 To NUM : Lprint F,WORD$(F,0),WORD$(F,1) : Next F
+   End If
+   If T$="#save"
+      Show On : A$=Fsel$("df0:*.NIALL") : Hide On
+      If Upper$(Right$(A$,6))<>".NIALL"
+         A$=A$+".NIALL"
+      End If
+      Open Out 1,A$ : Print #1,NUM
+      For F=0 To NUM : Print #1,WORD$(F,0) : Print #1,WORD$(F,1) : Next F
+      Close 1
+   End If
+   If T$="#load"
+      Show On : A$=Fsel$("df0:*.NIALL") : Hide On : Open In 1,A$
+      Input #1,NUM
+      Y=Y Curs
+      For F=0 To NUM : Locate 0,Y : Print "Countdown:";NUM-F;"  "; : Input #1,WORD$(F,0) : Input #1,WORD$(F,1) : Next F
+      Close 1
+      Print
+   End If
+   If T$="#correct"
+      Pen CO(0) : Print "Enter incorrect word:"; : Pen 1 : Input " ";O$
+      For F=1 To NUM
+         If Lower$(O$)=WORD$(F,0)
+            Pen CO(0) : Print "Enter correct spelling:"; : Pen 1 : Input " ";N$
+            WORD$(F,0)=Lower$(N$)
+         Else
+         Next F : Print "Cannot find word ";O$
+      End If
+   End If
+   If T$="#fresh"
+      Pen CO(0) : Centre "Are you sure (Y/N)" : A$=Input$(1) : Print
+      If Upper$(A$)="Y"
+         For F=0 To NUM : WORD$(F,0)="" : WORD$(F,1)="" : Next F : NUM=0
+      End If
+   End If
+   If T$="#quit"
+      Pen CO(0) : Centre "Do you really want to quit (Y/N)" : A$=Input$(1) : Print
+      If Upper$(A$)="Y"
+         Screen Close 0 : Screen Close 1 : End
+      End If
+   End If
+   If T$="#speak"
+      If SPEAK=0
+         SPEAK=1
+      Else
+         SPEAK=0
+      End If
+   End If
+   If T$="#lprint"
+      If HARD=0
+         HARD=1
+      Else
+         HARD=0
+      End If
+   End If
+End Proc
